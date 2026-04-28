@@ -58,9 +58,9 @@
   // START_BLOCK_ROULETTE_CONFIG
   var ROULETTE_SPINS = 3;
   var COMPLIMENTS = [
-    'Рома, ты КРУТОЙ 😎',
-    'Рома — ты офигенный 🔥',
-    'Рома, ты секси 😏'
+    'Саша, ты КРУТОЙ 😎',
+    'Саша — ты офигенный 🔥',
+    'Саша, ты секси 😏'
   ];
   // END_BLOCK_ROULETTE_CONFIG
 
