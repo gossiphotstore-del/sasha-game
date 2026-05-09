@@ -1,7 +1,8 @@
-// FILE: src/scenes/GameScene.js
-// VERSION: 1.0.0
+// FILE: game/src/scenes/GameScene.js
+// VERSION: 2.0.0
 // START_MODULE_CONTRACT:
 // PURPOSE: Основная игровая сцена. Объединяет Player, InputSystem, SpawnSystem, HUD.
+//          В v2.0: текст финиша читается из GAME_TEXTS с гендерной адаптацией.
 //          Управляет игровым циклом: движение, коллизии, сбор предметов, финиш.
 // SCOPE: Создание мира, управление update-loop, переход в FinalScene при финише.
 // INPUT: Нет данных из предыдущей сцены (с чистого старта каждый раз).
@@ -16,7 +17,8 @@
 // END_INVARIANTS
 //
 // START_CHANGE_SUMMARY:
-// LAST_CHANGE: [v1.0.0 - Полная реализация. Slices 2+3 GameScene Core+Content.]
+// LAST_CHANGE: [v2.0.0 - FS-5: Текст финиша через formatText(GAME_TEXTS.finish[HERO_GENDER], PLAYER_NAME).]
+// PREV_CHANGE_SUMMARY: [v1.0.0 - Полная реализация. Slices 2+3 GameScene Core+Content.]
 // END_CHANGE_SUMMARY
 //
 // START_MODULE_MAP:
@@ -57,7 +59,7 @@ class GameScene extends Phaser.Scene {
     this._gameOver          = false;
     this._lastLightningTime = 0;
 
-    console.log('[Flow][IMP:5][GameScene][constructor][Init] GameScene инстанцирована. [OK]');
+    console.log('[Flow][IMP:5][GameScene][constructor][Init] GameScene v2 инстанцирована. [OK]');
   }
 
   // START_FUNCTION_create
@@ -90,7 +92,6 @@ class GameScene extends Phaser.Scene {
     // END_BLOCK_BACKGROUND
 
     // START_BLOCK_GROUND: Земля — статическое тело на всю ширину уровня
-    // Физика: Zone с center у GROUND_Y + GROUND_HEIGHT/2
     this._groundGroup = this.physics.add.staticGroup();
     var groundZone = this.add.zone(
       worldW / 2,
@@ -109,7 +110,6 @@ class GameScene extends Phaser.Scene {
     // END_BLOCK_GROUND
 
     // START_BLOCK_PLAYER: Создание игрока и его коллайдер с землёй
-    // y = GROUND_Y - 41 (спрайт 81px, полувысота 40.5 → колёса на уровне земли)
     this._player = new Player(this, 150, C.GROUND_Y - 41);
 
     this.physics.add.collider(this._player.sprite, this._groundGroup,
@@ -146,7 +146,7 @@ class GameScene extends Phaser.Scene {
 
     // START_BLOCK_CAMERA: Камера следует за игроком по X, фиксирована по Y
     this.cameras.main.startFollow(this._player.sprite, false, 0.1, 0);
-    this.cameras.main.setDeadzone(0, C.GAME_HEIGHT * 2);  // деадзона по Y = весь экран
+    this.cameras.main.setDeadzone(0, C.GAME_HEIGHT * 2);
     // END_BLOCK_CAMERA
 
     // START_BLOCK_PROGRESS_TEXT: Индикатор прогресса в правом верхнем углу
@@ -174,7 +174,7 @@ class GameScene extends Phaser.Scene {
     }, [], this);
     // END_BLOCK_CONTROLS_HINT
 
-    console.log('[BeliefState][IMP:9][GameScene][create][Init] GameScene создана. FINISH_X=' +
+    console.log('[BeliefState][IMP:9][GameScene][create][Init] GameScene v2 создана. FINISH_X=' +
       C.FINISH_X + ' [OK]');
   }
   // END_FUNCTION_create
@@ -216,24 +216,19 @@ class GameScene extends Phaser.Scene {
     }
     // END_BLOCK_PROGRESS
 
-    // START_BLOCK_FINISH_CHECK: Проверка победы по очкам (500) или по дистанции (запасной вариант)
+    // START_BLOCK_FINISH_CHECK: Проверка победы по очкам (100) или по дистанции
     if (window.ScoreSystem.score >= C.WIN_SCORE || this._player.x >= C.FINISH_X) {
       this._onFinish();
     }
     // END_BLOCK_FINISH_CHECK
 
-    // START_BLOCK_CAMERA_Y: Зафиксировать камеру по Y (игрок не улетает за экран)
+    // START_BLOCK_CAMERA_Y: Зафиксировать камеру по Y
     this.cameras.main.scrollY = 0;
     // END_BLOCK_CAMERA_Y
   }
   // END_FUNCTION_update
 
   // START_FUNCTION__onObstacleHit
-  // START_CONTRACT:
-  // PURPOSE: Overlap игрок ↔ препятствие. Показывает молнии без остановки игрока.
-  //          Кулдаун 350мс предотвращает спам эффекта пока игрок внутри спрайта.
-  // COMPLEXITY_SCORE: 2
-  // END_CONTRACT
   _onObstacleHit(playerSprite, obstacleSprite) {
     var now = this.time.now;
     if (now - this._lastLightningTime < 350) { return; }
@@ -249,15 +244,7 @@ class GameScene extends Phaser.Scene {
   // END_FUNCTION__onObstacleHit
 
   // START_FUNCTION__spawnLightning
-  // START_CONTRACT:
-  // PURPOSE: Рисует 5 zig-zag молний поверх препятствия и быстро гасит (200мс).
-  // COMPLEXITY_SCORE: 4
-  // END_CONTRACT
   _spawnLightning(cx, cy, w, h) {
-    /**
-     * Каждый болт — ломаная линия из случайных отрезков сверху вниз препятствия.
-     * Graphics создаётся в мировых координатах — камера корректно прокручивает его.
-     */
     var gfx = this.add.graphics().setDepth(15);
 
     for (var i = 0; i < 5; i++) {
@@ -279,7 +266,6 @@ class GameScene extends Phaser.Scene {
       }
       gfx.strokePath();
 
-      // Искра на кончике болта
       gfx.fillStyle(0xffffff, 1);
       gfx.fillCircle(bx, by, isMain ? 4 : 2);
     }
@@ -297,10 +283,6 @@ class GameScene extends Phaser.Scene {
   // END_FUNCTION__spawnLightning
 
   // START_FUNCTION__onCollectiblePickup
-  // START_CONTRACT:
-  // PURPOSE: Overlap игрок ↔ коллектибл. Делегирует сбор объекту Collectible.
-  // COMPLEXITY_SCORE: 2
-  // END_CONTRACT
   _onCollectiblePickup(playerSprite, collectibleSprite) {
     var col = collectibleSprite.getData('ref');
     if (col && col.active) { col.collect(); }
@@ -309,16 +291,39 @@ class GameScene extends Phaser.Scene {
 
   // START_FUNCTION__onFinish
   // START_CONTRACT:
-  // PURPOSE: Останавливает игрока, освобождает системы, переходит в FinalScene.
+  // PURPOSE: Останавливает игрока, показывает гендерно-адаптированный текст финиша,
+  //          освобождает системы, переходит в FinalScene.
   // COMPLEXITY_SCORE: 4
   // END_CONTRACT
   _onFinish() {
     if (this._gameOver) { return; }
     this._gameOver = true;
 
+    var C     = GameConstants;
     var score = window.ScoreSystem.score;
+
+    // START_BLOCK_FINISH_TEXT: Гендерно-адаптированный текст финиша
+    var finishTemplate = (window.GAME_TEXTS && window.GAME_TEXTS.finish && window.GAME_TEXTS.finish[C.HERO_GENDER])
+      ? window.GAME_TEXTS.finish[C.HERO_GENDER]
+      : '{name} финишировал! 🏁';
+
+    var finishMsg = (window.formatText)
+      ? window.formatText(finishTemplate, C.PLAYER_NAME)
+      : C.PLAYER_NAME + ' финишировал! 🏁';
+
+    this.add.text(C.GAME_WIDTH / 2, C.GAME_HEIGHT / 2 - 30, finishMsg, {
+      fontFamily:      'Arial Black',
+      fontSize:        '28px',
+      color:           '#f0c040',
+      stroke:          '#000',
+      strokeThickness: 6,
+      wordWrap:        { width: 700 },
+      align:           'center'
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(30).setAlpha(0.9);
+    // END_BLOCK_FINISH_TEXT
+
     console.log('[BeliefState][IMP:9][GameScene][_onFinish][Finish] Финиш! score=' +
-      score + ' [OK]');
+      score + ' finishMsg="' + finishMsg + '" [OK]');
 
     // START_BLOCK_FINISH_EFFECTS: Стоп + короткая пауза перед переходом
     this._player.sprite.setVelocityX(0);
