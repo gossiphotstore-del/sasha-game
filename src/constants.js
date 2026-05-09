@@ -1,20 +1,33 @@
-// FILE: src/constants.js
-// VERSION: 1.2.0
+// FILE: game/src/constants.js
+// VERSION: 2.0.0
 // START_MODULE_CONTRACT:
 // PURPOSE: Единый реестр всех магических чисел, настраиваемых строк и перечислений игры.
-// SCOPE: Конфигурация игры — размеры, скорости, очки, тексты рулетки, ключи ассетов.
-// INPUT: Отсутствует (статический модуль).
+//          В v2.0 удалён хардкод COMPLIMENTS (заменён на window.GAME_TEXTS).
+//          Параметры персонализации читаются из window.GAME_CONFIG (с дефолтами для разработки).
+// SCOPE: Конфигурация игры — размеры, скорости, очки, ключи ассетов, параметры сессии.
+// INPUT: window.GAME_CONFIG (инжектируется game_builder.py или дефолты для локальной разработки).
 // OUTPUT: Глобальный объект GameConstants в window, доступный всем сценам Phaser.
 // KEYWORDS: DOMAIN(8): GameConfig; CONCEPT(9): SingleSourceOfTruth; TECH(7): ES6Object
 // END_MODULE_CONTRACT
 //
+// START_RATIONALE:
+// Q: Почему COMPLIMENTS удалены из GameConstants?
+// A: Тексты с гендерной адаптацией вынесены в window.GAME_TEXTS (game/src/data/texts.js).
+//    GameConstants остаётся источником числовых констант и ключей ассетов. Разделение
+//    ответственности: константы = числа/ключи, тексты = GAME_TEXTS.
+// Q: Почему HERO_SPRITE_URL читается из GAME_CONFIG, а не хардкодится?
+// A: game_builder.py подставляет URL AI-сгенерированных спрайтов с GitHub Pages.
+//    Дефолты обеспечивают работу в режиме локальной разработки без сборщика.
+// END_RATIONALE
+//
 // START_CHANGE_SUMMARY:
-// LAST_CHANGE: [v1.2.0 - Приведены ключи в соответствие с BootScene (добавлены BG/BG_START/BG_FINAL/GROUND/ROMAN_STANDING).]
-// PREV_CHANGE_SUMMARY: [v1.0.0 - Первичное создание.]
+// LAST_CHANGE: [v2.0.0 - FS-5: Удалены COMPLIMENTS. Добавлены PLAYER_NAME, HERO_SPRITE_URL,
+//              COMPANION_SPRITE_URL, HAS_COMPANION, SCENARIO, HERO_GENDER из window.GAME_CONFIG.]
+// PREV_CHANGE_SUMMARY: [v1.2.0 - Приведены ключи в соответствие с BootScene.]
 // END_CHANGE_SUMMARY
 //
 // START_MODULE_MAP:
-// CONST [10][Все игровые константы] => window.GameConstants
+// CONST [10][Все игровые константы + параметры сессии] => window.GameConstants
 // END_MODULE_MAP
 
 // START_BLOCK_GAME_CONSTANTS
@@ -56,12 +69,9 @@
   // END_BLOCK_SCORE_VALUES
 
   // START_BLOCK_ROULETTE_CONFIG
+  // BUG_FIX_CONTEXT: COMPLIMENTS удалены в v2.0 — заменены на window.GAME_TEXTS.roulette
+  // с гендерной адаптацией. ROULETTE_SPINS остаётся числовой константой.
   var ROULETTE_SPINS = 3;
-  var COMPLIMENTS = [
-    'Саша, ты КРУТОЙ 😎',
-    'Саша — ты офигенный 🔥',
-    'Саша, ты секси 😏'
-  ];
   // END_BLOCK_ROULETTE_CONFIG
 
   // START_BLOCK_SCENE_KEYS
@@ -78,9 +88,9 @@
   // START_BLOCK_ASSET_KEYS
   var ASSETS = {
     // Персонажи
-    PLAYER:                  'player',              // roman_buggy.png
+    PLAYER:                  'player',              // hero_sprite (из GAME_CONFIG.HERO_SPRITE_URL)
     ROMAN_STANDING:          'roman_standing',       // roman_standing.png (Start scene)
-    GIRL:                    'girl',                 // girl_waving.png
+    GIRL:                    'girl',                 // companion sprite (из GAME_CONFIG.COMPANION_SPRITE_URL)
 
     // Фоны (BG_GAME и BG — один и тот же ключ 'bg' для совместимости)
     BG:                      'bg',                  // background_game.png
@@ -118,6 +128,28 @@
   };
   // END_BLOCK_COLORS
 
+  // START_BLOCK_SESSION_CONFIG: Параметры персонализации из window.GAME_CONFIG
+  // Дефолты используются при локальной разработке (без game_builder.py).
+  // BUG_FIX_CONTEXT: Дефолтные пути для локальной разработки используют ../assets/
+  // потому что game/ является поддиректорией проекта, а assets/ лежат на уровень выше.
+  // При сборке game_builder.py заменит эти значения на полные URL GitHub Pages.
+  var cfg = global.GAME_CONFIG || {
+    PLAYER_NAME:          'Тестовый Игрок',
+    HERO_SPRITE_URL:      '../assets/images/final/roman_buggy.png',
+    COMPANION_SPRITE_URL: '../assets/images/final/girl_waving.png',
+    HAS_COMPANION:        true,
+    SCENARIO:             'birthday',
+    HERO_GENDER:          'm'
+  };
+
+  var PLAYER_NAME          = cfg.PLAYER_NAME;
+  var HERO_SPRITE_URL      = cfg.HERO_SPRITE_URL;
+  var COMPANION_SPRITE_URL = cfg.COMPANION_SPRITE_URL;
+  var HAS_COMPANION        = cfg.HAS_COMPANION;
+  var SCENARIO             = cfg.SCENARIO;
+  var HERO_GENDER          = cfg.HERO_GENDER;
+  // END_BLOCK_SESSION_CONFIG
+
   // START_BLOCK_EXPORT
   global.GameConstants = {
     GAME_WIDTH,    GAME_HEIGHT,
@@ -127,17 +159,27 @@
     SPAWN_DIST_MIN, SPAWN_DIST_MAX, SPAWN_LEAD,
     SPAWN_SAFE_START, SPAWN_SAFE_END,
     SCORE_COIN,    SCORE_STRAWBERRY, SCORE_HEART, WIN_SCORE,
-    ROULETTE_SPINS, COMPLIMENTS,
-    SCENES, ASSETS, COLORS
+    ROULETTE_SPINS,
+    SCENES, ASSETS, COLORS,
+    // Параметры персонализации
+    PLAYER_NAME,
+    HERO_SPRITE_URL,
+    COMPANION_SPRITE_URL,
+    HAS_COMPANION,
+    SCENARIO,
+    HERO_GENDER
   };
 
   Object.freeze(global.GameConstants.SCENES);
   Object.freeze(global.GameConstants.ASSETS);
   Object.freeze(global.GameConstants.COLORS);
-  Object.freeze(global.GameConstants.COMPLIMENTS);
   Object.freeze(global.GameConstants);
 
-  console.log('[Config][IMP:5][constants][EXPORT] GameConstants v1.2 загружены. FINISH_X=' + FINISH_X + ' [OK]');
+  console.log('[Config][IMP:5][constants][EXPORT] GameConstants v2.0 загружены. ' +
+    'PLAYER_NAME=' + PLAYER_NAME +
+    ' SCENARIO=' + SCENARIO +
+    ' HAS_COMPANION=' + HAS_COMPANION +
+    ' HERO_GENDER=' + HERO_GENDER + ' [OK]');
   // END_BLOCK_EXPORT
 
 }(typeof window !== 'undefined' ? window : global));
