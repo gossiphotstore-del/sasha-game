@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<!--
+  FILE: game/template.html
+  VERSION: 1.0.0
+  PURPOSE: Шаблон HTML-файла игры с плейсхолдерами для game_builder.py.
+           Двойные фигурные скобки (см. PLACEHOLDERS ниже) заменяются Python-скриптом при сборке.
+           Содержит блок инжекции window.GAME_CONFIG для динамической конфигурации.
+  SCOPE: Bootstrap — корневая оболочка приложения с поддержкой персонализации.
+  PLACEHOLDERS: Маргарита, https://gossiphotstore-del.github.io/sasha-game/games/7427e36a-3816-467e-9784-b17c2c632504/sprites/hero.png, ,
+                false, love, f
+-->
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Игра для Маргарита</title>
+  <style>
+    /* START_BLOCK_RESET: Базовый сброс стилей и центрирование игрового холста */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #1a1a2e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Arial', sans-serif;
+      /* iOS safe area */
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    /* Phaser создаёт <canvas> внутри #game-container */
+    #game-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+    }
+
+    #game-container canvas {
+      /* Адаптивное масштабирование холста с сохранением пропорций */
+      max-width: 100vw;
+      max-height: 100vh;
+      object-fit: contain;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+    /* END_BLOCK_RESET */
+
+    /* START_BLOCK_LOADING: Индикатор загрузки до инициализации Phaser */
+    #loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #1a1a2e;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #f0c040;
+      font-size: 24px;
+      z-index: 999;
+      transition: opacity 0.5s ease;
+    }
+
+    #loading-screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .loading-title {
+      font-size: 32px;
+      font-weight: bold;
+      margin-bottom: 16px;
+      text-shadow: 0 0 12px rgba(240, 192, 64, 0.8);
+    }
+
+    .loading-subtitle {
+      font-size: 16px;
+      color: #aaa;
+    }
+    /* END_BLOCK_LOADING */
+  </style>
+</head>
+<body>
+
+  <!-- START_BLOCK_DOM: Корневые DOM-элементы -->
+  <div id="loading-screen">
+    <div class="loading-title">Загружаем игру для Маргарита...</div>
+  </div>
+
+  <div id="game-container"></div>
+  <!-- END_BLOCK_DOM -->
+
+  <!-- START_BLOCK_SCRIPTS: Подключение Phaser и игровой логики -->
+  <!--
+    Порядок загрузки важен: GAME_CONFIG → Phaser → тексты → константы → системы → UI → сущности → сцены → main.
+    GAME_CONFIG инжектируется первым — до всех игровых скриптов.
+  -->
+
+  <!-- GAME_CONFIG_INJECT -->
+  <script>
+  window.GAME_CONFIG = {
+    PLAYER_NAME:          "Маргарита",
+    HERO_SPRITE_URL:      "https://gossiphotstore-del.github.io/sasha-game/games/7427e36a-3816-467e-9784-b17c2c632504/sprites/hero.png",
+    COMPANION_SPRITE_URL: "",
+    HAS_COMPANION:         false,
+    SCENARIO:             "love",
+    HERO_GENDER:          "f"
+  };
+  </script>
+  <!-- END_GAME_CONFIG_INJECT -->
+
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+
+  <!-- Статические ассеты лежат в корне gh-pages (src/, assets/).
+       HTML находится в games/{id}/index.html → ../../ ведёт к корню репозитория. -->
+
+  <!-- 1. Константы (нет зависимостей) -->
+  <script src="../../src/constants.js"></script>
+
+  <!-- 2. Гендерно-адаптированные тексты (зависит только от GAME_CONFIG) -->
+  <script src="../../src/data/texts.js"></script>
+
+  <!-- 3. Системы без зависимостей от сцен -->
+  <script src="../../src/systems/ScoreSystem.js"></script>
+  <script src="../../src/systems/MusicSystem.js"></script>
+
+  <!-- 4. UI-компоненты -->
+  <script src="../../src/ui/HUD.js"></script>
+  <script src="../../src/ui/Roulette.js"></script>
+
+  <!-- 5. Игровые сущности -->
+  <script src="../../src/entities/Player.js"></script>
+  <script src="../../src/entities/Obstacle.js"></script>
+  <script src="../../src/entities/Collectible.js"></script>
+
+  <!-- 6. Оставшиеся системы (зависят от сущностей) -->
+  <script src="../../src/systems/InputSystem.js"></script>
+  <script src="../../src/systems/SpawnSystem.js"></script>
+
+  <!-- 7. Сцены (зависят от всего выше) -->
+  <script src="../../src/scenes/BootScene.js"></script>
+  <script src="../../src/scenes/StartScene.js"></script>
+  <script src="../../src/scenes/GameScene.js"></script>
+  <script src="../../src/scenes/FinalScene.js"></script>
+  <script src="../../src/scenes/RouletteScene.js"></script>
+  <script src="../../src/scenes/EndScene.js"></script>
+
+  <!-- 8. Точка входа (последний) -->
+  <script src="../../src/main.js"></script>
+  <!-- END_BLOCK_SCRIPTS -->
+
+  <script>
+    // START_BLOCK_LOADING_HIDE: Скрыть загрузочный экран после инициализации Phaser
+    window.addEventListener('load', function () {
+      setTimeout(function () {
+        var loadingScreen = document.getElementById('loading-screen');
+        if (loadingScreen) {
+          loadingScreen.classList.add('hidden');
+        }
+      }, 300);
+    });
+    // END_BLOCK_LOADING_HIDE
+  </script>
+
+</body>
+</html>
