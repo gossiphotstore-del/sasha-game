@@ -106,7 +106,13 @@ class BootScene extends Phaser.Scene {
     // END_BLOCK_SETUP_PROGRESS_BAR
 
     // START_BLOCK_LOAD_ASSETS: Регистрация PNG-ассетов из assets/images/final/
-    var base = 'assets/images/final/';
+    // BUG_FIX_CONTEXT: В deployed игре (games/{id}/index.html) относительный путь 'assets/...'
+    // разрешается как games/{id}/assets/... — файлов там нет. GAME_CONFIG.ASSETS_BASE='../../'
+    // указывает путь к корню gh-pages. Локально GAME_CONFIG отсутствует → prefix=''.
+    var assetsBase = (window.GAME_CONFIG && window.GAME_CONFIG.ASSETS_BASE !== undefined)
+        ? window.GAME_CONFIG.ASSETS_BASE
+        : '';
+    var base = assetsBase + 'assets/images/final/';
 
     // Фоны
     this.load.image(C.ASSETS.BG,       base + 'background_game.png');
@@ -126,11 +132,23 @@ class BootScene extends Phaser.Scene {
     this.load.image(C.ASSETS.FLAG, base + 'finish_flag.png');
 
     // Персонажи (могут отсутствовать — генерируются в create() как плейсхолдеры)
-    this.load.image(C.ASSETS.PLAYER,          base + 'roman_buggy.png');
-    this.load.image(C.ASSETS.ROMAN_STANDING,  base + 'roman_standing.png');
-    this.load.image(C.ASSETS.GIRL,            base + 'girl_waving.png');
+    this.load.image(C.ASSETS.PLAYER, base + 'roman_buggy.png');
+    this.load.image(C.ASSETS.GIRL,   base + 'girl_waving.png');
 
-    console.log('[I/O][IMP:7][BootScene][preload][LOAD_ASSETS] 11 ассетов добавлено в очередь. [OK]');
+    // BUG_FIX_CONTEXT: Герой загружается из URL AI-генерации если GAME_CONFIG.HERO_SPRITE_URL
+    // установлен (deployed версия). Локально — статический roman_standing.png.
+    var heroSpriteUrl = (window.GAME_CONFIG && window.GAME_CONFIG.HERO_SPRITE_URL)
+        ? window.GAME_CONFIG.HERO_SPRITE_URL
+        : null;
+    if (heroSpriteUrl) {
+        this.load.crossOrigin = 'anonymous';
+        this.load.image(C.ASSETS.ROMAN_STANDING, heroSpriteUrl);
+        console.log('[I/O][IMP:7][BootScene][preload][LOAD_ASSETS] hero_sprite: загрузка из GAME_CONFIG URL. [OK]');
+    } else {
+        this.load.image(C.ASSETS.ROMAN_STANDING, base + 'roman_standing.png');
+    }
+
+    console.log('[I/O][IMP:7][BootScene][preload][LOAD_ASSETS] ассеты добавлены в очередь. assetsBase=' + assetsBase + ' [OK]');
     // END_BLOCK_LOAD_ASSETS
   }
   // END_FUNCTION_preload
@@ -188,7 +206,7 @@ class BootScene extends Phaser.Scene {
     });
     // END_BLOCK_GROUND_TEXTURE
 
-    // START_BLOCK_PLAYER_TEXTURE: Плейсхолдер игрока (багги + Саша) 96×58
+    // START_BLOCK_PLAYER_TEXTURE: Плейсхолдер игрока (багги + Роман) 96×58
     if (!this.textures.exists(C.ASSETS.PLAYER)) {
       this._makeTexture(C.ASSETS.PLAYER, 96, 58, function (g) {
         // Корпус багги
@@ -215,7 +233,7 @@ class BootScene extends Phaser.Scene {
     }
     // END_BLOCK_PLAYER_TEXTURE
 
-    // START_BLOCK_ROMAN_STANDING_TEXTURE: Плейсхолдер Саши стоящего 60×100
+    // START_BLOCK_ROMAN_STANDING_TEXTURE: Плейсхолдер Романа стоящего 60×100
     if (!this.textures.exists(C.ASSETS.ROMAN_STANDING)) {
       this._makeTexture(C.ASSETS.ROMAN_STANDING, 60, 100, function (g) {
         // Голова
