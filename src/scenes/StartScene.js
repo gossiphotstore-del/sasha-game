@@ -1,8 +1,8 @@
 // FILE: src/scenes/StartScene.js
 // VERSION: 1.2.0
 // START_MODULE_CONTRACT:
-// PURPOSE: Стартовый экран игры. Саша стоит на площадке, праздничный фон.
-//          По нажатию СТАРТ: багги въезжает справа, Саша «садится», переход в GameScene.
+// PURPOSE: Стартовый экран игры. Роман стоит на площадке, праздничный фон.
+//          По нажатию СТАРТ: багги въезжает справа, Роман «садится», переход в GameScene.
 // SCOPE: Отображение UI, анимация въезда багги, переход в GameScene.
 // INPUT: Нет данных из предыдущей сцены.
 // OUTPUT: Запуск GameScene.
@@ -12,7 +12,7 @@
 //
 // START_CHANGE_SUMMARY:
 // LAST_CHANGE: [v1.2.0 - Возврат к GitHub-версии. Текст на тёмной подложке, кнопка с чистой пульсацией (только масштаб).]
-// PREV_CHANGE_SUMMARY: [v1.1.0 - Фигурка Саши +50%, машинка въезжает пустой, Саша появляется в ней на ходу.]
+// PREV_CHANGE_SUMMARY: [v1.1.0 - Фигурка Романа +50%, машинка въезжает пустой, Роман появляется в ней на ходу.]
 // END_CHANGE_SUMMARY
 //
 // START_MODULE_MAP:
@@ -23,7 +23,7 @@
 class StartScene extends Phaser.Scene {
 
   /**
-   * Стартовый экран: праздничный фон, Саша стоит, приветственный текст, кнопка СТАРТ.
+   * Стартовый экран: праздничный фон, Роман стоит, приветственный текст, кнопка СТАРТ.
    * После нажатия СТАРТ: анимация въезда багги + переход в GameScene.
    */
   constructor() {
@@ -52,7 +52,7 @@ class StartScene extends Phaser.Scene {
     }
     // END_BLOCK_BACKGROUND
 
-    // START_BLOCK_ROMAN_STANDING: Саша стоит в центре (чуть левее), размер +50%
+    // START_BLOCK_ROMAN_STANDING: Роман стоит в центре (чуть левее), размер +50%
     var romanX = cx - 80;
     var romanY = C.GAME_HEIGHT - 60;
     this._romanSprite = this.add.image(romanX, romanY, C.ASSETS.ROMAN_STANDING)
@@ -66,7 +66,11 @@ class StartScene extends Phaser.Scene {
 
     // START_BLOCK_TITLE: Приветственный заголовок + информационная панель
     // Панель увеличена по высоте, шрифты подняты, добавлена строка управления
-    this.add.text(cx, 90, 'Привет, Саша! 🎂', {
+    // BUG_FIX_CONTEXT: Имя было захардкожено. Теперь читается из GAME_CONFIG.PLAYER_NAME,
+    // который инжектируется в deployed HTML через game/template.html.
+    var playerName = (window.GAME_CONFIG && window.GAME_CONFIG.PLAYER_NAME)
+        ? window.GAME_CONFIG.PLAYER_NAME : 'Роман Анатольевич';
+    this.add.text(cx, 90, 'Привет, ' + playerName + '! 🎂', {
       fontFamily:      'Arial Black',
       fontSize:        '28px',
       color:           '#f0c040',
@@ -160,9 +164,9 @@ class StartScene extends Phaser.Scene {
   // START_FUNCTION__animateBuggyEntry
   _animateBuggyEntry() {
     /**
-     * 1. Багги въезжает справа — пустая (Саши внутри нет).
-     * 2. На середине пути (600мс) Саша плавно «появляется» внутри машины.
-     * 3. Стоячий Саша исчезает когда багги добирается до него.
+     * 1. Багги въезжает справа — пустая (Романа внутри нет).
+     * 2. На середине пути (600мс) Роман плавно «появляется» внутри машины.
+     * 3. Стоячий Роман исчезает когда багги добирается до него.
      * 4. Переход в GameScene.
      */
     var C      = GameConstants;
@@ -176,7 +180,7 @@ class StartScene extends Phaser.Scene {
       .setDepth(6);
     // END_BLOCK_BUGGY_SPRITE
 
-    // START_BLOCK_ROMAN_IN_CAR: Саша внутри машины — изначально невидим, следует за багги
+    // START_BLOCK_ROMAN_IN_CAR: Роман внутри машины — изначально невидим, следует за багги
     // Смещение: чуть левее центра багги, в верхней части кузова
     var driverOffX = -10;
     var driverOffY = -52;
@@ -192,7 +196,7 @@ class StartScene extends Phaser.Scene {
       .setDepth(7);
     // END_BLOCK_ROMAN_IN_CAR
 
-    // START_BLOCK_BUGGY_TWEEN: Tween: едет влево к Саше; onUpdate синхронизирует позицию Саши в машине
+    // START_BLOCK_BUGGY_TWEEN: Tween: едет влево к Роману; onUpdate синхронизирует позицию Романа в машине
     this.tweens.add({
       targets:  this._buggy,
       x:        romanX + 20,
@@ -209,7 +213,7 @@ class StartScene extends Phaser.Scene {
     });
     // END_BLOCK_BUGGY_TWEEN
 
-    // START_BLOCK_ROMAN_APPEAR: Саша появляется в машине на середине пути (~600мс)
+    // START_BLOCK_ROMAN_APPEAR: Роман появляется в машине на середине пути (~600мс)
     this.time.delayedCall(600, function () {
       self.tweens.add({
         targets:  self._romanInCar,
@@ -225,10 +229,10 @@ class StartScene extends Phaser.Scene {
   // START_FUNCTION__onBuggyArrived
   _onBuggyArrived() {
     /**
-     * Саша садится (анимация уменьшения в 0), затем переходим в GameScene.
+     * Роман садится (анимация уменьшения в 0), затем переходим в GameScene.
      */
 
-    // START_BLOCK_ROMAN_SIT: Саша исчезает (садится в машину)
+    // START_BLOCK_ROMAN_SIT: Роман исчезает (садится в машину)
     this.tweens.add({
       targets:  this._romanSprite,
       scaleY:   0,
